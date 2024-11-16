@@ -71,7 +71,7 @@ def handle_calculate(expression):
             return "error: result is too big\n"
         return f"response: {result}\n"
     except:
-        return "error: invalid calculation\n"
+        return "quit"
 
 
 def handle_max(numbers):
@@ -79,7 +79,7 @@ def handle_max(numbers):
         nums = list(map(int, numbers.split(" ")))
         return f"the maximum is {max(nums)}\n"
     except:
-        return "error: invalid max calculation\n"
+        return "quit"
 
 
 def handle_factors(number):
@@ -95,7 +95,7 @@ def handle_factors(number):
             divisor += 1
         return f"the prime factors of {number} are: {', '.join(map(str, factors))}\n"
     except:
-        return "error: invalid factors calculation\n"
+        return "quit"
 
 
 def main():

@@ -24,6 +24,7 @@ def main():
             # Receive data from server
             data = client_socket.recv(1024).decode()
             if not data:
+                print("Connection closed by the server")
                 break  # Connection closed by the server
 
             # Print the server's message
