@@ -116,8 +116,8 @@ def main():
     run = True
 
     while run:
-        rlist, wlist, elist = select.select(inputs, [], [])
-        for s in rlist:
+        readable, _, _ = select.select(inputs, [], [])
+        for s in readable:
             try:
                 if s is server_socket:  # Socket is the server socket
                     conn, addr = (
