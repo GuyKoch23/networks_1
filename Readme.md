@@ -24,6 +24,8 @@ The server provides services that include user authentication and basic command 
 ### Communication Flow
 
 1. **Login Phase**:
+   - Once the client accepted by server's listening socket 
+     the server sends the message: `Welcome! Please log in.`
    - The client must authenticate by sending a username and password.
    - Credentials are sent in the following format:
      - **Username**: `User: <username>`

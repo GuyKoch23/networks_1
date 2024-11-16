@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import socket
 import select
 import sys
@@ -115,8 +116,8 @@ def main():
     run = True
 
     while run:
-        readable, _, _ = select.select(inputs, [], [])
-        for s in readable:
+        rlist, wlist, elist = select.select(inputs, [], [])
+        for s in rlist:
             try:
                 if s is server_socket:  # Socket is the server socket
                     conn, addr = (
@@ -147,7 +148,7 @@ def main():
                                 if s in client_info:
                                     del client_info[s]
                             else:
-                                s.send(response.encode())
+                                s.send(response .encode())
                         else:
                             response = handle_login(data, client_info[s], users)
                             if response == "Close connection":

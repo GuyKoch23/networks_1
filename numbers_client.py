@@ -1,18 +1,16 @@
+#!/usr/bin/python3
 import socket
 import sys
 
 
 def handle_user_response(client_socket):
-    user_input = input("> ")
+    user_input = input("")
     client_socket.send(user_input.encode())
     if user_input == "quit":
         return "quit"  # Return quit to break the loop in main
 
 
 def main():
-    # hostname = "127.0.0.1"
-    # port = 12345
-
     hostname = sys.argv[1] if len(sys.argv) > 1 else "localhost"
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 1337
 
@@ -28,7 +26,8 @@ def main():
                 break  # Connection closed by the server
 
             # Print the server's message
-            print(data, end="")
+            if "Enter your password" not in data:
+                print(data, end="")
 
             if (
                 "Welcome" in data  # Server says welcome, prompt for username input
