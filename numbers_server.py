@@ -1,94 +1,166 @@
 import socket
 import select
+import struct
+from util import *
 import sys
-import pandas as pd
 
 def load_users(filename):
-    # df = pd.read_csv(filename, sep=' ', header=None)
-    # users = dict(zip(df[0], df[1]))
-    # print(users)
     users = {}
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         for line in f:
-            print(line.strip().split())
-            username, password = line.strip().split()
+            username, password = line.strip().split(" ")
             users[username] = password
     return users
 
-def handle_login(data, client_info, users):
-    if client_info["state"] == "waiting_username":
-        if data.startswith("User: "):
-            client_info["username"] = data[6:].strip()
-            client_info["state"] = "waiting_password"
-            return "Password: "
-        else:
-            return "Error: Please enter User: <username>\n"
-    elif client_info["state"] == "waiting_password":
-        if data.startswith("Password: "):
-            password = data[9:].strip()
-            username = client_info["username"]
-            if username in users and users[username] == password:
-                client_info["authenticated"] = True
-                client_info["state"] = "authenticated"
-                return f"Hi {username}, good to see you.\n"
-            else:
-                client_info["state"] = "waiting_username"  # Reset to retry login
-                return "Failed to login\n"
-        else:
-            return "Error: Please enter Password: <password>\n"
-
-def handle_command(data):
-    if data.startswith("calculate:"):
-        return handle_calculate(data[10:])
-    elif data.startswith("max:"):
-        return handle_max(data[4:])
-    elif data.startswith("factors:"):
-        return handle_factors(data[8:])
-    elif data == "quit":
-        return "Goodbye!\n"
-    else:
-        return "Error: Invalid command\n"
-
-def handle_calculate(expression):
-    try:
-        x, op, y = expression.split()
-        x, y = int(x), int(y)
-        if op == '+':
-            result = x + y
-        elif op == '-':
-            result = x - y
-        elif op == '*':
-            result = x * y
-        elif op == '/':
-            result = round(x / y, 2)
-        elif op == '^':
-            result = x ** y
-        if result > 2**31 - 1 or result < -2**31:
-            return "error: result is too big\n"
-        return f"response: {result}\n"
-    except:
-        return "error: invalid calculation\n"
-
 def handle_max(numbers):
     try:
-        nums = list(map(int, numbers.split()))
+        nums = list(map(int, numbers.split(" ")))
         return f"the maximum is {max(nums)}\n"
     except:
-        return "error: invalid max calculation\n"
-
+        return "QUT"
+    
 def handle_factors(number):
     try:
-        x = int(number)
+        x = int(number)  # Number must be an integer, otherwise we wouldn't have factors
         factors = []
         divisor = 2
         while x > 1:
             while x % divisor == 0:
-                factors.append(divisor)
+                if divisor not in factors:
+                    factors.append(divisor)
                 x //= divisor
             divisor += 1
         return f"the prime factors of {number} are: {', '.join(map(str, factors))}\n"
     except:
-        return "error: invalid factors calculation\n"
+        return "QUT"
+
+# Utility functions (sendall, send_message, recvall, recv_message are defined above)
+
+def send_welcome_message(client_socket):
+    welcome_message = "Welcome! Please log in."
+    send_message(client_socket, welcome_message)
+
+def handle_client_message(client_socket, message, authenticated_clients, users):
+    if client_socket not in authenticated_clients:
+        if message.startswith("AUTH"):
+            parts = message.split()
+            if len(parts) == 3:
+                username, password = parts[1], parts[2]
+                if username in users and users[username] == password:
+                    authenticated_clients[client_socket] = username
+                    return f"SUC Hi {username}, good to see you."
+                else:
+                    return "FLR Failes to login." 
+            else:
+                return "QUT"
+        else:
+            return "QUT"
+    else:
+        if message.startswith("CLC"):
+            parts = message.split()
+            if len(parts) == 4:
+                op1, operation, op2 = float(parts[1]), parts[2], float(parts[3])
+                try:
+                    if operation == "+":
+                        result = op1 + op2
+                    elif operation == "-":
+                        result = op1 - op2
+                    elif operation == "*":
+                        result = op1 * op2
+                    elif operation == "/":
+                        result = op1 / op2
+                    elif operation == "^":
+                        result = op1 ** op2
+                    else:
+                        return f"ERR result is too long"
+                    return f"RES {result}"
+                except Exception as e:
+                    return f"ERR {str(e)}"
+            else:
+                return f"QUT"
+            
+        elif message.startswith("MAX"):
+            res = handle_max(message[5:-1])
+            if res == "QUT":
+                del authenticated_clients[client_socket]
+                return f"QUT"
+            return f"MRS {res}"
+        
+        elif message.startswith("FAC"):
+            res =  handle_factors(message[4:])  # We start from 9 and not 8 because we want to skip the space after factors:
+            if res == "QUT":
+                del authenticated_clients[client_socket]
+                return f"QUT"
+            return f"FRS {res}"
+        
+        elif message == "QUT":
+            del authenticated_clients[client_socket]
+            return "QUT"
+        else:
+            print("Invalid command, disconnecting from socket")  # Page 3 line 2
+            return "QUT"
+
+
+def start_server(users, port, authenticated_clients):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(("127.0.0.1", port))
+    server_socket.listen()
+    inputs = [server_socket]
+    run = True
+
+    print(f"Server listening on port {port}")
+
+    clients = {}
+
+    while run:
+        readable, _, _ = select.select(inputs, [], [])
+
+        for sock in readable:
+            try:
+                if sock == server_socket:
+                    client_socket, client_address = server_socket.accept()
+                    print(f"New connection from {client_address}")
+                    client_socket.setblocking(0)
+                    inputs.append(client_socket)
+                    clients[client_socket] = b""
+                    send_welcome_message(client_socket)  # Send welcome message
+                else:
+                    try:
+                        message = recv_message(sock)
+                        response = handle_client_message(sock, message.strip(), authenticated_clients, users)
+                        if(response == "QUT"):
+                            send_message(sock, response)
+                            inputs.remove(sock)
+                            if sock in authenticated_clients:
+                                del authenticated_clients[sock]
+                            if sock in clients:
+                                del clients[sock]
+                            sock.close()
+                        else:
+                            send_message(sock, response)
+                    except Exception as e:
+                        print(f"Client error: {e}")
+                        inputs.remove(sock)
+                        if sock in authenticated_clients:
+                            del authenticated_clients[sock]
+                        if sock in clients:
+                            del clients[sock]
+                        sock.close()
+            except (ConnectionResetError, BrokenPipeError):
+                print("Client abruptly closed the connection.")
+                inputs.remove(sock)
+                sock.close()
+                if sock in authenticated_clients:
+                    del authenticated_clients[sock]
+            except:
+                print("Error has occured. Exiting...")
+                run = False
+                break
+
+    for sock in inputs:  # Close all sockets
+        sock.close()
+        if sock in authenticated_clients:
+            del authenticated_clients[sock]
 
 def main():
     if len(sys.argv) < 2:
@@ -97,48 +169,10 @@ def main():
     users_file = sys.argv[1]
     port = int(sys.argv[2]) if len(sys.argv) >= 3 else 1337
     users = load_users(users_file)
+    authenticated_clients = {}
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('127.0.0.1', port))
-    server_socket.listen()
-    print(f"Server listening...")
+    start_server(users, port, authenticated_clients)
 
-    inputs = [server_socket]
-    client_info = {}
-
-    while True:
-        readable, _, _ = select.select(inputs, [], [])
-        for s in readable:
-            if s is server_socket:
-                conn, addr = server_socket.accept()
-                print(f"Connected by {addr}")
-                conn.setblocking(0)
-                inputs.append(conn)
-                client_info[conn] = {
-                    "state": "waiting_username",
-                    "username": "",
-                    "authenticated": False,
-                }
-                conn.send(b"Welcome! Please log in.\n")
-            else:
-                data = s.recv(1024).decode().strip()
-                if not data:
-                    inputs.remove(s)
-                    s.close()
-                    del client_info[s]
-                else:
-                    if client_info[s]["authenticated"]:
-                        response = handle_command(data)
-                        if response == "Goodbye!\n":
-                            s.send(response.encode())
-                            inputs.remove(s)
-                            s.close()
-                            del client_info[s]
-                        else:
-                            s.send(response.encode())
-                    else:
-                        response = handle_login(data, client_info[s], users)
-                        s.send(response.encode())
 
 if __name__ == "__main__":
     main()
