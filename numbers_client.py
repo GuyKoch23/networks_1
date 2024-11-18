@@ -63,29 +63,38 @@ def client_program():
             if not command:
                 continue
 
-            if(command.startswith("calculate")):
-                command = f"CLC"+command[10:]
+            if(command.startswith("calculate: ")):
+                command = f"CLC"+command
                 send_message(client_socket, command)
                 response = recv_message(client_socket)
-                print("response:" + response[4:] + ".")
                 if(response.startswith("QUT")):
                     break
+                elif response.startswith("ERR"):
+                    print(response[4:])
+                else:
+                    print("response: " + response[4:] + ".")
 
-            elif(command.startswith("max")):
-                command = f"MAX"+command[4:]
-                send_message(client_socket, command)
-                response = recv_message(client_socket)
-                print(response[4:].strip())
-                if(response.startswith("QUT")):
-                    break
 
-            elif(command.startswith("factors")):
-                command = f"FAC"+command[8:]
+            elif(command.startswith("max: ")):
+                command = f"MAX"+command
                 send_message(client_socket, command)
                 response = recv_message(client_socket)
-                print(response[4:].strip())
                 if(response.startswith("QUT")):
                     break
+                print(response[4:].strip())
+
+
+            elif(command.startswith("factors: ")):
+                command = f"FAC"+command
+                send_message(client_socket, command)
+                response = recv_message(client_socket)
+                if(response.startswith("QUT")):
+                    break
+                elif response.startswith("ERR"):
+                    print(response[4:])
+                else:
+                    print(response[4:].strip())
+
 
             else: # unknown command or (command.startswith("quit")):
                 send_message(client_socket, "QUT")

@@ -17,14 +17,17 @@ def load_users(filename):
 def handle_max(numbers):
     try:
         nums = list(map(int, numbers.split(" ")))
-        return f"the maximum is {max(nums)}\n"
+        return f"the maximum is {max(nums)}"
     except:
+        print("Invalid Max format, disconnecting from socket")
         return "QUT"
 
 
 def handle_factors(number):
     try:
-        x = int(number)  # Number must be an integer, otherwise we wouldn't have factors
+        x = int(number)
+        if x < 0:
+            return "ERR error: Can't calculate factors of a negative number"
         factors = []
         divisor = 2
         while x > 1:
@@ -33,7 +36,7 @@ def handle_factors(number):
                     factors.append(divisor)
                 x //= divisor
             divisor += 1
-        return f"the prime factors of {number} are: {', '.join(map(str, factors))}\n"
+        return f"the prime factors of {number} are: {', '.join(map(str, factors))}"
     except:
         return "QUT"
 
@@ -68,10 +71,10 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
         else:
             return "QUT"
     else:
-        if message.startswith("CLC"):
+        if message.startswith("CLCcalculate: "):
             parts = message.split()
             if len(parts) == 4:
-                op1, operation, op2 = float(parts[1]), parts[2], float(parts[3])
+                op1, operation, op2 = int(parts[1]), parts[2], int(parts[3])
                 try:
                     if operation == "+":
                         result = op1 + op2
@@ -84,34 +87,42 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
                     elif operation == "^":
                         result = op1**op2
                     else:
-                        return f"ERR result is too long"
+                        print("Invalid operation, disconnecting from socket")
+                        del authenticated_clients[client_socket]
+                        return "QUT"
+                    
+                    if result > 2**31 - 1 or result < -2**31:
+                        return "ERR error: result is too big"
                     return f"RES {result}"
                 except Exception as e:
                     return f"ERR {str(e)}"
             else:
-                return f"QUT"
+                return "QUT"
 
-        elif message.startswith("MAX"):
-            res = handle_max(message[5:-1])
+        elif message.startswith("MAXmax: "):
+            print(message)
+            res = handle_max(message[9:-1])
             if res == "QUT":
                 del authenticated_clients[client_socket]
                 return f"QUT"
             return f"MRS {res}"
 
-        elif message.startswith("FAC"):
+        elif message.startswith("FACfactors: "):
             res = handle_factors(
-                message[4:]
-            )  # We start from 9 and not 8 because we want to skip the space after factors:
+                message[12:]
+            )
+            if res.startswith("ERR"):
+                return res
             if res == "QUT":
                 del authenticated_clients[client_socket]
-                return f"QUT"
+                return "QUT"
             return f"FRS {res}"
 
         elif message == "QUT":
             del authenticated_clients[client_socket]
             return "QUT"
         else:
-            print("Invalid command, disconnecting from socket")  # Page 3 line 2
+            print("Invalid command, disconnecting from socket")
             return "QUT"
 
 
