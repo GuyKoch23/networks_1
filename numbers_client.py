@@ -5,14 +5,28 @@ from util import *
 
 def login(client_socket):
         while True:
-            user = input("").strip()[6:]
+            input_text = handle_input(client_socket)
+            if input_text == "QUT":
+                return "QUT"
+                
+            user = input_text.strip()[6:]
             while not user:
-                user = input("").strip()[6:]
-            
-            password = input("").strip()[10:]
-            while not password:
-                password = input("").strip()[10:]
+                input_text = handle_input(client_socket)
+                if input_text == "QUT":
+                    return "QUT"
 
+            input_text = handle_input(client_socket)
+            if input_text == "QUT":
+                return "QUT"
+
+            password = input_text.strip()[10:]
+            while not password:
+                input_text = handle_input(client_socket)
+                if input_text == "QUT":
+                    return "QUT"
+
+                password = input_text.strip()[10:]
+            
             command = " ".join(["AUTH", user, password])
             send_message(client_socket, command)
             response = recv_message(client_socket).strip()
@@ -28,7 +42,11 @@ def client_program():
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 1337
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((hostname, port))
+    try:
+        client_socket.connect((hostname, port))
+    except Exception as e:
+        print(f"Could not connect to the server due to error: {e}")
+        return
 
     try:
         # Receive and display the welcome message
