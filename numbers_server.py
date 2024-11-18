@@ -4,6 +4,7 @@ import struct
 from util import *
 import sys
 
+
 def load_users(filename):
     users = {}
     with open(filename, "r") as f:
@@ -12,13 +13,15 @@ def load_users(filename):
             users[username] = password
     return users
 
+
 def handle_max(numbers):
     try:
         nums = list(map(int, numbers.split(" ")))
         return f"the maximum is {max(nums)}\n"
     except:
         return "QUT"
-    
+
+
 def handle_factors(number):
     try:
         x = int(number)  # Number must be an integer, otherwise we wouldn't have factors
@@ -34,23 +37,32 @@ def handle_factors(number):
     except:
         return "QUT"
 
+
 # Utility functions (sendall, send_message, recvall, recv_message are defined above)
+
 
 def send_welcome_message(client_socket):
     welcome_message = "Welcome! Please log in."
     send_message(client_socket, welcome_message)
 
+
 def handle_client_message(client_socket, message, authenticated_clients, users):
     if client_socket not in authenticated_clients:
         if message.startswith("AUTH"):
-            parts = message.split()
+            parts = message.split(',')
             if len(parts) == 3:
                 username, password = parts[1], parts[2]
+                if not username.startswith("User: ") or not password.startswith("Password: "):
+                    print("Invalid login format, disconnecting from socket")
+                    return "QUT"
+
+                username = username[6:]
+                password = password[10:]
                 if username in users and users[username] == password:
                     authenticated_clients[client_socket] = username
                     return f"SUC Hi {username}, good to see you."
                 else:
-                    return "FLR Failes to login." 
+                    return "FLR Failes to login."
             else:
                 return "QUT"
         else:
@@ -70,7 +82,7 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
                     elif operation == "/":
                         result = op1 / op2
                     elif operation == "^":
-                        result = op1 ** op2
+                        result = op1**op2
                     else:
                         return f"ERR result is too long"
                     return f"RES {result}"
@@ -78,21 +90,23 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
                     return f"ERR {str(e)}"
             else:
                 return f"QUT"
-            
+
         elif message.startswith("MAX"):
             res = handle_max(message[5:-1])
             if res == "QUT":
                 del authenticated_clients[client_socket]
                 return f"QUT"
             return f"MRS {res}"
-        
+
         elif message.startswith("FAC"):
-            res =  handle_factors(message[4:])  # We start from 9 and not 8 because we want to skip the space after factors:
+            res = handle_factors(
+                message[4:]
+            )  # We start from 9 and not 8 because we want to skip the space after factors:
             if res == "QUT":
                 del authenticated_clients[client_socket]
                 return f"QUT"
             return f"FRS {res}"
-        
+
         elif message == "QUT":
             del authenticated_clients[client_socket]
             return "QUT"
@@ -127,8 +141,10 @@ def start_server(users, port, authenticated_clients):
                 else:
                     try:
                         message = recv_message(sock)
-                        response = handle_client_message(sock, message.strip(), authenticated_clients, users)
-                        if(response == "QUT"):
+                        response = handle_client_message(
+                            sock, message.strip(), authenticated_clients, users
+                        )
+                        if response == "QUT":
                             send_message(sock, response)
                             inputs.remove(sock)
                             if sock in authenticated_clients:
@@ -161,6 +177,7 @@ def start_server(users, port, authenticated_clients):
         sock.close()
         if sock in authenticated_clients:
             del authenticated_clients[sock]
+
 
 def main():
     if len(sys.argv) < 2:

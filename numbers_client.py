@@ -8,8 +8,8 @@ def login(client_socket):
             input_text = handle_input(client_socket)
             if input_text == "QUT":
                 return "QUT"
-                
-            user = input_text.strip()[6:]
+
+            user = input_text.strip()
             while not user:
                 input_text = handle_input(client_socket)
                 if input_text == "QUT":
@@ -19,15 +19,15 @@ def login(client_socket):
             if input_text == "QUT":
                 return "QUT"
 
-            password = input_text.strip()[10:]
+            password = input_text.strip()
             while not password:
                 input_text = handle_input(client_socket)
                 if input_text == "QUT":
                     return "QUT"
 
-                password = input_text.strip()[10:]
+                password = input_text.strip()
             
-            command = " ".join(["AUTH", user, password])
+            command = ",".join(["AUTH", user, password])
             send_message(client_socket, command)
             response = recv_message(client_socket).strip()
             if response.startswith("SUC"):
