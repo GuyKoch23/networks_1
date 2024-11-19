@@ -17,17 +17,18 @@ def load_users(filename):
 def handle_max(numbers):
     try:
         nums = list(map(int, numbers.split(" ")))
+        if len(nums) > 2**31 - 1:
+            return "QUT"
         return f"the maximum is {max(nums)}"
     except:
-        print("Invalid Max format, disconnecting from socket")
-        return "QUT"
+        return "MER"
 
 
 def handle_factors(number):
     try:
         x = int(number)
         if x < 0:
-            return "ERR error: Can't calculate factors of a negative number"
+            return "FER Can't calculate factors of a negative number"
         factors = []
         divisor = 2
         while x > 1:
@@ -38,7 +39,7 @@ def handle_factors(number):
             divisor += 1
         return f"the prime factors of {number} are: {', '.join(map(str, factors))}"
     except:
-        return "QUT"
+        return "ERR"
 
 
 # Utility functions (sendall, send_message, recvall, recv_message are defined above)
@@ -57,7 +58,7 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
                 username, password = parts[1], parts[2]
                 if not username.startswith("User: ") or not password.startswith("Password: "):
                     print("Invalid login format, disconnecting from socket")
-                    return "QUT"
+                    return "ERR"
 
                 username = username[6:]
                 password = password[10:]
@@ -67,9 +68,9 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
                 else:
                     return "FLR Failes to login."
             else:
-                return "QUT"
+                return "ERR"
         else:
-            return "QUT"
+            return "ERR"
     else:
         if message.startswith("CLCcalculate: "):
             parts = message.split()
@@ -92,38 +93,35 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
                         return "QUT"
                     
                     if result > 2**31 - 1 or result < -2**31:
-                        return "ERR error: result is too big"
+                        return "CER error: result is too big"
                     return f"RES {result}"
                 except Exception as e:
                     return f"ERR {str(e)}"
             else:
-                return "QUT"
+                return "ERR"
 
         elif message.startswith("MAXmax: "):
-            print(message)
             res = handle_max(message[9:-1])
-            if res == "QUT":
+            if res == "QUT" or res == "MER":
                 del authenticated_clients[client_socket]
-                return f"QUT"
+                return res
             return f"MRS {res}"
 
         elif message.startswith("FACfactors: "):
             res = handle_factors(
                 message[12:]
             )
-            if res.startswith("ERR"):
-                return res
-            if res == "QUT":
+            if res == "QUT" or res.startswith("ERR") or res.startswith("FER"):
                 del authenticated_clients[client_socket]
-                return "QUT"
+                return res
             return f"FRS {res}"
 
         elif message == "QUT":
             del authenticated_clients[client_socket]
             return "QUT"
         else:
-            print("Invalid command, disconnecting from socket")
-            return "QUT"
+            del authenticated_clients[client_socket]
+            return "ERR" # invalid command
 
 
 def start_server(users, port, authenticated_clients):
@@ -155,7 +153,7 @@ def start_server(users, port, authenticated_clients):
                         response = handle_client_message(
                             sock, message.strip(), authenticated_clients, users
                         )
-                        if response == "QUT":
+                        if response == "QUT" or response == "ERR":
                             send_message(sock, response)
                             inputs.remove(sock)
                             if sock in authenticated_clients:

@@ -33,6 +33,9 @@ def login(client_socket):
             if response.startswith("SUC"):
                 print(response[4:])
                 return "SUC"
+            if response.startswith("ERR"):
+                print("An error occurred, connection closed...")
+                return "QUT"
             if response.startswith("QUT"):
                 return "QUT"
             print(response[4:])
@@ -54,7 +57,7 @@ def client_program():
         print(welcome_message)
 
         login_res = login(client_socket)
-        if login_res == "QUT":
+        if login_res == "QUT" or login_res == "ERR":
             return
 
         # Start interacting with the server
@@ -63,41 +66,57 @@ def client_program():
             if not command:
                 continue
 
-            if(command.startswith("calculate: ")):
+            if(command.startswith("calculate")):
                 command = f"CLC"+command
                 send_message(client_socket, command)
                 response = recv_message(client_socket)
                 if(response.startswith("QUT")):
                     break
-                elif response.startswith("ERR"):
+                elif response.startswith("CER"):
                     print(response[4:])
+                elif response.startswith("ERR"):
+                    print("An error occurred, connection closed...")
+                    break
                 else:
                     print("response: " + response[4:] + ".")
 
 
-            elif(command.startswith("max: ")):
+            elif(command.startswith("max")):
                 command = f"MAX"+command
                 send_message(client_socket, command)
                 response = recv_message(client_socket)
                 if(response.startswith("QUT")):
                     break
+                if response.startswith("MER"):
+                    print("An error occurred, connection closed...")
+                    break
+                elif response.startswith("ERR"):
+                    print("An error occurred, connection closed...")
+                    break
                 print(response[4:].strip())
 
 
-            elif(command.startswith("factors: ")):
+            elif(command.startswith("factors")):
                 command = f"FAC"+command
                 send_message(client_socket, command)
                 response = recv_message(client_socket)
                 if(response.startswith("QUT")):
                     break
+                elif response.startswith("FER"):
+                    print(response[4:].strip())
                 elif response.startswith("ERR"):
-                    print(response[4:])
+                    print("An error occurred, connection closed...")
+                    break
                 else:
                     print(response[4:].strip())
-
+            
+            elif(command == "quit"):
+                send_message(client_socket, "QUT")
+                break
 
             else: # unknown command or (command.startswith("quit")):
                 send_message(client_socket, "QUT")
+                print("An error occurred, connection closed...")
                 break
 
     except Exception as e:
