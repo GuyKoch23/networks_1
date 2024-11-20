@@ -84,7 +84,7 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
                     elif operation == "*":
                         result = op1 * op2
                     elif operation == "/":
-                        result = op1 / op2
+                        result = round(op1 / op2, 2)
                     elif operation == "^":
                         result = op1**op2
                     else:
