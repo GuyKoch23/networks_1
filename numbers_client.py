@@ -15,6 +15,8 @@ def login(client_socket):
                 if input_text == "QUT":
                     return "QUT"
 
+                user = input_text.strip()
+
             input_text = handle_input(client_socket)
             if input_text == "QUT":
                 return "QUT"
