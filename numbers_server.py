@@ -123,7 +123,6 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
                 message[12:]
             )
             if res == "QUT" or res.startswith("ERR") or res.startswith("FER"):
-                del authenticated_clients[client_socket]
                 return res
             return f"FRS {res}"
 
