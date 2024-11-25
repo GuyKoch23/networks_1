@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import socket
 import sys
 from util import * # sendall, send_message, recvall, recv_message

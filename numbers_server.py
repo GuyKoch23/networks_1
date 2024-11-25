@@ -1,11 +1,13 @@
+#!/usr/bin/python3
 import socket
 import select
 import struct
-from util import *
+from util import * # sendall, send_message, recvall, recv_message
 import sys
 
 
 def load_users(filename):
+    '''loading users from file'''
     users = {}
     try:
         with open(filename, "r") as f:
@@ -14,12 +16,12 @@ def load_users(filename):
                 users[username] = password
         return users
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {e}") # problem with users file
         return
 
 
-
 def handle_max(numbers):
+    '''calculate max(numbers)'''
     try:
         nums = list(map(int, numbers.split(" ")))
         if len(nums) > 2**31 - 1:
@@ -30,6 +32,7 @@ def handle_max(numbers):
 
 
 def handle_factors(number):
+    '''calcuate the factors of input number'''
     try:
         x = int(number)
         if x < 0:
@@ -47,17 +50,16 @@ def handle_factors(number):
         return "ERR"
 
 
-# Utility functions (sendall, send_message, recvall, recv_message are defined above)
-
-
 def send_welcome_message(client_socket):
+    '''Sending welcome message to client'''
     welcome_message = "Welcome! Please log in."
     send_message(client_socket, welcome_message)
 
 
 def handle_client_message(client_socket, message, authenticated_clients, users):
+    '''client message handling'''
     if client_socket not in authenticated_clients:
-        if message.startswith("AUTH"):
+        if message.startswith("AUTH"): # authentication message
             parts = message.split(',')
             if len(parts) == 3:
                 username, password = parts[1], parts[2]
@@ -77,7 +79,7 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
         else:
             return "ERR"
     else:
-        if message.startswith("CLCcalculate: "):
+        if message.startswith("CLCcalculate: "): # calculation message
             parts = message.split()
             if len(parts) == 4:
                 op1, operation, op2 = int(parts[1]), parts[2], int(parts[3])
@@ -105,14 +107,14 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
             else:
                 return "ERR"
 
-        elif message.startswith("MAXmax: "):
+        elif message.startswith("MAXmax: "): # maximization message
             res = handle_max(message[9:-1])
             if res == "QUT" or res == "MER":
                 del authenticated_clients[client_socket]
                 return res
             return f"MRS {res}"
 
-        elif message.startswith("FACfactors: "):
+        elif message.startswith("FACfactors: "): # factorization message
             res = handle_factors(
                 message[12:]
             )
