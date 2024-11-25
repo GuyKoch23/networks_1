@@ -7,11 +7,15 @@ import sys
 
 def load_users(filename):
     users = {}
-    with open(filename, "r") as f:
-        for line in f:
-            username, password = line.strip().split(" ")
-            users[username] = password
-    return users
+    try:
+        with open(filename, "r") as f:
+            for line in f:
+                username, password = line.strip().split(" ")
+                users[username] = password
+        return users
+    except Exception as e:
+        return
+
 
 
 def handle_max(numbers):
@@ -195,8 +199,10 @@ def main():
     users_file = sys.argv[1]
     port = int(sys.argv[2]) if len(sys.argv) >= 3 else 1337
     users = load_users(users_file)
+    if not users:
+        print("Error with users file...")
+        return
     authenticated_clients = {}
-
     start_server(users, port, authenticated_clients)
 
 
