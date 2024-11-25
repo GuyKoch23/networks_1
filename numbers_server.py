@@ -12,7 +12,7 @@ def load_users(filename):
     try:
         with open(filename, "r") as f:
             for line in f:
-                username, password = line.strip().split(" ")
+                username, password = line.strip().split("\t")
                 users[username] = password
         return users
     except Exception as e:

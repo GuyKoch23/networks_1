@@ -1,2 +1,2 @@
-Bob simplepass
-Alice BetT3RpAas
+Bob	simplepass
+Alice	BetT3RpAas
