@@ -37,6 +37,10 @@ def handle_factors(number):
         x = int(number)
         if x < 0:
             return "FER Can't calculate factors of a negative number"
+        if x == 0:
+            return "FER Can't calculate factors of 0"
+        if x == 1:
+            return "FER Can't calculate factors of 1"
         factors = []
         divisor = 2
         while x > 1:
