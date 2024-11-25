@@ -122,7 +122,10 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
             res = handle_factors(
                 message[12:]
             )
-            if res == "QUT" or res.startswith("ERR") or res.startswith("FER"):
+            if res.startswith("FER"):
+                return res
+            if res == "QUT" or res.startswith("ERR"):
+                del authenticated_clients[client_socket]
                 return res
             return f"FRS {res}"
 
