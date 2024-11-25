@@ -14,6 +14,7 @@ def load_users(filename):
                 users[username] = password
         return users
     except Exception as e:
+        print(f"Error: {e}")
         return
 
 
