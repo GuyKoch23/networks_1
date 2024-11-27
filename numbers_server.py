@@ -77,7 +77,7 @@ def handle_client_message(client_socket, message, authenticated_clients, users):
                     authenticated_clients[client_socket] = username
                     return f"SUC Hi {username}, good to see you."
                 else:
-                    return "FLR Failes to login."
+                    return "FLR Failed to login."
             else:
                 return "ERR"
         else:
